@@ -1,0 +1,14 @@
+# Sample AIDE configuration (use default distro file as base)
+database=file:/var/lib/aide/aide.db
+database_out=file:/var/lib/aide/aide.db.new
+gzip_dbout=yes
+verbose=5
+
+# Common rulesets
+NORMAL = p+i+n+u+g+s+m+c+acl+selinux+xattrs+sha512
+LOG = p+u+g+i+n+sha512
+
+# Watch important paths
+/etc NORMAL
+/boot NORMAL
+/var/log LOG

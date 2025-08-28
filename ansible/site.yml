@@ -1,0 +1,100 @@
+---
+- name: Apply Linux hardening (lab)
+  hosts: all
+  become: yes
+  vars:
+    ssh_port: 22
+    allow_ssh_passwords: false
+
+  tasks:
+    - name: Ensure baseline packages
+      apt:
+        name:
+          - ufw
+          - fail2ban
+          - auditd
+          - aide
+          - apparmor-utils
+          - unattended-upgrades
+          - libpam-pwquality
+        state: present
+        update_cache: yes
+
+    - name: Configure UFW defaults
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Allow SSH (port {{ ssh_port }})
+      ufw:
+        rule: allow
+        port: "{{ ssh_port }}"
+        proto: tcp
+
+    - name: Copy fail2ban jail
+      copy:
+        src: ../config/fail2ban/jail.local
+        dest: /etc/fail2ban/jail.local
+        mode: "0644"
+      notify: restart fail2ban
+
+    - name: Copy sysctl config
+      copy:
+        src: ../config/sysctl/99-hardening.conf
+        dest: /etc/sysctl.d/99-hardening.conf
+        mode: "0644"
+      notify: reload sysctl
+
+    - name: Copy auditd rules
+      copy:
+        src: ../config/auditd/hardening.rules
+        dest: /etc/audit/rules.d/hardening.rules
+        mode: "0640"
+      notify: reload auditd
+
+    - name: Configure unattended upgrades
+      copy:
+        src: ../config/apt/20auto-upgrades
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: "0644"
+
+    - name: Configure pwquality
+      copy:
+        src: ../config/pam/pwquality.conf
+        dest: /etc/security/pwquality.conf
+        mode: "0644"
+
+    - name: Harden sshd (lineinfile minimal set)
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.re }}"
+        line: "{{ item.line }}"
+        backrefs: yes
+      loop:
+        - {{ re: '^#?Protocol\s+.*', line: 'Protocol 2' }}
+        - {{ re: '^#?PermitRootLogin\s+.*', line: 'PermitRootLogin no' }}
+        - {{ re: '^#?PasswordAuthentication\s+.*', line: 'PasswordAuthentication ' ~ (allow_ssh_passwords | ternary('yes','no')) }}
+        - {{ re: '^#?Port\s+.*', line: 'Port ' ~ ssh_port }}
+      notify: restart ssh
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted
+      ignore_errors: true
+
+    - name: restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted
+      ignore_errors: true
+
+    - name: reload sysctl
+      command: sysctl --system
+      ignore_errors: true
+
+    - name: reload auditd
+      command: augenrules --load
+      ignore_errors: true
