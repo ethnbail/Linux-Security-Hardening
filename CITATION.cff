@@ -4,8 +4,6 @@ title: "Linux Security Hardening Project"
 authors:
   - family-names: Bailey
     given-names: Ethan
-  - family-names: ChatGPT
-    given-names: Assistant
 date-released: 2025-08-28
 license: MIT
 repository-code: "https://github.com/your-username/linux-hardening-project"
