@@ -1,9 +1,0 @@
-cff-version: 1.2.0
-message: "If you use this project, please cite it as below."
-title: "Linux Security Hardening Project"
-authors:
-  - family-names: Bailey
-    given-names: Ethan
-date-released: 2025-08-28
-license: MIT
-repository-code: "https://github.com/your-username/linux-hardening-project"
